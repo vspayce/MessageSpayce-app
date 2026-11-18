@@ -11,6 +11,7 @@
 # No federation, no public ports. Bridge <-> apps traffic is end-to-end encrypted.
 #
 # Safe to re-run: finished steps are skipped.
+# Non-interactive use: set MX_USER and MX_PASSWORD in the environment.
 
 set -euo pipefail
 
@@ -31,7 +32,7 @@ bold "Sculpin Server setup"
 [ "$(uname -m)" = "x86_64" ] || die "The iMessage bridge image is x86_64 (amd64) only. This machine is $(uname -m)."
 command -v python3 >/dev/null || die "python3 is required (sudo apt install python3)."
 command -v curl >/dev/null || die "curl is required (sudo apt install curl)."
-sudo -v || die "This script needs sudo."
+sudo true || die "This script needs sudo."   # (sudo -v prompts even with NOPASSWD on newer sudo)
 mkdir -p "$DIR"
 cd "$DIR"
 ok "Working in $DIR"
@@ -68,7 +69,10 @@ echo "$SERVER_NAME" > .server_name
 # ── 3. Settings & secrets ────────────────────────────────────────────────────
 bold "3/7  Settings"
 if [ ! -f .env ]; then
-  MX_USER="$(ask "Your Matrix username (letters/numbers)" "$(whoami | tr -cd 'a-z0-9')")"
+  MX_USER="${MX_USER:-}"
+  if [ -z "$MX_USER" ]; then
+    MX_USER="$(ask "Your Matrix username (letters/numbers)" "$(whoami | tr -cd 'a-z0-9')" 2>/dev/null || whoami | tr -cd 'a-z0-9')"
+  fi
   PG_PASSWORD="$(openssl rand -hex 24)"
   umask 077
   cat > .env <<EOF
@@ -267,8 +271,18 @@ curl -fsS http://127.0.0.1:8008/health >/dev/null 2>&1 || die "Synapse didn't co
 ok "Matrix server is running"
 
 if [ ! -f .user_created ]; then
-  echo "  Create your Matrix account password now:"
-  $DC exec synapse register_new_matrix_user -c /data/homeserver.yaml -a -u "$MX_USER" http://localhost:8008 </dev/tty
+  if [ -n "${MX_PASSWORD:-}" ]; then
+    $DC exec -T synapse register_new_matrix_user -c /data/homeserver.yaml -a -u "$MX_USER" -p "$MX_PASSWORD" http://localhost:8008
+  elif { : </dev/tty; } 2>/dev/null && [ -t 1 ]; then
+    echo "  Create your Matrix account password now:"
+    $DC exec synapse register_new_matrix_user -c /data/homeserver.yaml -a -u "$MX_USER" http://localhost:8008 </dev/tty
+  else
+    # No terminal to type into (e.g. run by an automation tool): generate one and show it once.
+    GEN_PW="$(openssl rand -base64 18 | tr -d '/+=' | cut -c1-20)"
+    $DC exec -T synapse register_new_matrix_user -c /data/homeserver.yaml -a -u "$MX_USER" -p "$GEN_PW" http://localhost:8008
+    warn "No terminal for a password prompt, so one was generated: $GEN_PW"
+    warn "Sign in with it once, then change it in your Matrix app's settings."
+  fi
   touch .user_created
   ok "Account @$MX_USER:$SERVER_NAME created"
 fi
