@@ -1,24 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>app.openbubbles.OpenBubbles</id>
+  <id>io.github.vspayce.Sculpin</id>
 
-  <name>OpenBubbles</name>
-  <summary>OpenBubbles client for Linux</summary>
+  <name>Sculpin</name>
+  <summary>iMessage client for Linux, based on OpenBubbles</summary>
 
   <metadata_license>MIT</metadata_license>
   <project_license>Apache-2.0</project_license>
 
-  <developer id="app.openbubbles">
-    <name>OpenBubbles</name>
+  <developer id="io.github.vspayce">
+    <name>vspayce</name>
   </developer>
 
-  <url type="homepage">https://openbubbles.app/</url>
-  <url type="bugtracker">https://github.com/OpenBubbles/openbubbles-app/issues</url>
+  <url type="homepage">https://github.com/vspayce/MessageSpayce-app</url>
+  <url type="bugtracker">https://github.com/vspayce/MessageSpayce-app/issues</url>
   <url type="faq">https://openbubbles.app/docs/faq.html</url>
   <url type="help">https://openbubbles.app/docs/troubleshooting.html</url>
   <url type="donation">https://www.paypal.com/donate/?hosted_button_id=MUZH6LH6ZGN6G</url>
   <url type="contact">https://discord.gg/98fWS4AQqN</url>
-  <url type="vcs-browser">https://github.com/OpenBubbles/openbubbles-app</url>
+  <url type="vcs-browser">https://github.com/vspayce/MessageSpayce-app</url>
 
   <branding>
     <color type="primary" scheme_preference="light">#8ab7ff</color>
@@ -40,7 +40,7 @@
     </p>
   </description>
 
-  <launchable type="desktop-id">app.openbubbles.OpenBubbles.desktop</launchable>
+  <launchable type="desktop-id">io.github.vspayce.Sculpin.desktop</launchable>
   <screenshots>
     <screenshot type="default">
       <image>https://openbubbles.app/MessagesDesktop-joined3.png</image>

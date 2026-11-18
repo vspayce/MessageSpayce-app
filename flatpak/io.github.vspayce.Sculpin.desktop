@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Name=Sculpin
+Comment=iMessage client for Linux, based on OpenBubbles
+Exec=bluebubbles
+Icon=io.github.vspayce.Sculpin
+Terminal=false
+Type=Application
+Categories=Network;InstantMessaging;Chat;
+StartupWMClass=io.github.vspayce.Sculpin

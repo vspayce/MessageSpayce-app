@@ -41,20 +41,10 @@ class FilesystemService extends GetxService {
     if (!kIsWeb) {
       //ignore: unnecessary_cast, we need this as a workaround
       appDocDir = (kIsDesktop ? await getApplicationSupportDirectory() : await getApplicationDocumentsDirectory()) as Directory;
-      if (kIsDesktop && Platform.isWindows) {
-        final String appDataRoot = joinAll(split(appDocDir.absolute.path).slice(0, 4));
-        final Directory msStoreLocation = Directory(join(
-            appDataRoot,
-            "Local",
-            "Packages",
-            "23344BlueBubbles.BlueBubbles_2fva2ntdzvhtw",
-            "LocalCache",
-            "Roaming",
-            "BlueBubbles",
-            "bluebubbles"));
-        if (!appDocDir.existsSync() && msStoreLocation.existsSync()) {
-          appDocDir = msStoreLocation;
-        }
+      // Sculpin: never adopt another app's folder directly (upstream used the BlueBubbles
+      // Microsoft Store folder in place). Instead, copy an existing OpenBubbles install once.
+      if (kIsDesktop) {
+        await _importFromOpenBubbles();
       }
       if (!headless) {
         final file = await rootBundle.load("assets/images/no-video-preview.png");
@@ -66,6 +56,62 @@ class FilesystemService extends GetxService {
     packageInfo = await PackageInfo.fromPlatform();
     if (!headless && Platform.isAndroid) {
       androidInfo = await DeviceInfoPlugin().androidInfo;
+    }
+  }
+
+  /// True when this launch copied data over from an OpenBubbles install.
+  bool importedFromOpenBubbles = false;
+
+  /// Sculpin: on first launch, copy an existing OpenBubbles install (messages, settings and
+  /// iMessage identity) into Sculpin's own data folder. The OpenBubbles folder is left untouched.
+  /// Quit OpenBubbles before the first launch so its database isn't mid-write during the copy.
+  Future<void> _importFromOpenBubbles() async {
+    try {
+      final Directory dest = appDocDir;
+      if (dest.existsSync() && dest.listSync().isNotEmpty) return; // already set up
+
+      final List<Directory> candidates = [];
+      if (Platform.isWindows) {
+        // %APPDATA%\Sculpin\sculpin  ->  %APPDATA%\OpenBubbles\openbubbles
+        candidates.add(Directory(join(dest.parent.parent.path, "OpenBubbles", "openbubbles")));
+      } else if (Platform.isLinux) {
+        // ~/.local/share/io.github.vspayce.Sculpin  ->  OpenBubbles' application-id or binary-name folder
+        candidates.add(Directory(join(dest.parent.path, "app.bluebubbles.BlueBubbles")));
+        candidates.add(Directory(join(dest.parent.path, "bluebubbles")));
+      }
+
+      Directory? source;
+      for (final d in candidates) {
+        if (Directory(join(d.path, "objectbox")).existsSync()) {
+          source = d;
+          break;
+        }
+      }
+      if (source == null) return;
+
+      Logger.info("Importing OpenBubbles data from ${source.path}");
+      // Copy into a temporary folder first, so an interrupted copy is never mistaken for a finished one.
+      final Directory tmp = Directory("${dest.path}.importing");
+      if (tmp.existsSync()) tmp.deleteSync(recursive: true);
+      await _copyDirectory(source, tmp);
+      if (dest.existsSync()) dest.deleteSync(recursive: true); // empty at this point
+      await tmp.rename(dest.path);
+      importedFromOpenBubbles = true;
+      Logger.info("Imported OpenBubbles data into ${dest.path}");
+    } catch (e, s) {
+      Logger.error("Importing from OpenBubbles failed", error: e, trace: s);
+    }
+  }
+
+  Future<void> _copyDirectory(Directory from, Directory to) async {
+    await to.create(recursive: true);
+    await for (final entity in from.list(followLinks: false)) {
+      final String target = join(to.path, basename(entity.path));
+      if (entity is Directory) {
+        await _copyDirectory(entity, Directory(target));
+      } else if (entity is File) {
+        await entity.copy(target);
+      }
     }
   }
 
