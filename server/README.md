@@ -30,7 +30,18 @@ You need three things:
 1. **Contact Key Verification turned off** on your Apple ID
    (iPhone: Settings › your name › Contact Key Verification).
 2. **A hardware key from an Intel Mac** (once; the Mac isn't needed afterwards).
-   On the Intel Mac (High Sierra 10.13 or newer):
+
+   **If the server itself is an Intel Mac running Linux** (like a MacBook with Ubuntu), build the
+   key right on it from the firmware:
+   ```bash
+   curl -fsSLO https://raw.githubusercontent.com/vspayce/MessageSpayce-app/sculpin/server/extract-key-linux.py
+   sudo python3 extract-key-linux.py
+   ```
+   (Or convert an existing OpenBubbles code with `python3 extract-key-linux.py --from-openbubbles`;
+   don't use one identity in the bridge and an OpenBubbles/BlueBubbles app at the same time.)
+
+   **Otherwise, on an Intel Mac running macOS:**
+   (High Sierra 10.13 or newer):
    ```bash
    xcode-select --install            # if the developer tools aren't there yet
    curl -fsSL https://github.com/jasonlaguidice/imessage/archive/refs/heads/main.tar.gz | tar xz
