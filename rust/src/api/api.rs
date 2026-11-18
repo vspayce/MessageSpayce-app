@@ -566,13 +566,19 @@ impl SharedPushState {
         let dir = PathBuf::from_str(&path).unwrap();
         let keystore = dir.join("keystore.plist");
 
+        // MessageSpayce: get (and migrate to) this install's key BEFORE loading the keystore,
+        // so the state we load is already re-encrypted.
+        #[cfg(not(target_os = "android"))]
+        let keystore_key = crate::desktop_vault::keystore_key(&dir);
+
         #[cfg(not(target_os = "android"))]
         init_keystore(SoftwareKeystore {
             state: plist::from_file(&keystore).unwrap_or_default(),
             update_state: Box::new(move |state| {
                 plist::to_file_xml(&keystore, state).unwrap();
             }),
-            encryptor: SoftwareEncryptor(*b"desktopisinsecureyoushouldn'tber"),
+            // MessageSpayce: per-install key from the OS keyring instead of the built-in one
+            encryptor: SoftwareEncryptor(keystore_key),
         });
 
         if let Err(err) = panic::catch_unwind(|| {

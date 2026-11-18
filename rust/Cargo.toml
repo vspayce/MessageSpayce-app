@@ -35,6 +35,10 @@ aes-gcm = "0.10.3"
 [target.'cfg(target_os = "android")'.dependencies]
 android_logger = "0.14.1"
 
+# MessageSpayce: desktop keystore key lives in the OS credential store
+[target.'cfg(not(target_os = "android"))'.dependencies]
+keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service", "crypto-rust"] }
+
 [build-dependencies]
 uniffi = { git = "https://github.com/mozilla/uniffi-rs", features = [ "build" ] }
 prost-build = { version = "0.12" }
