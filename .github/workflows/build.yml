@@ -151,9 +151,13 @@ jobs:
           "OPENSSL_DIR=$dir" | Out-File -FilePath $env:GITHUB_ENV -Append
           "OPENSSL_NO_VENDOR=1" | Out-File -FilePath $env:GITHUB_ENV -Append
 
+      - name: Build Rust core (shows real compiler errors)
+        run: cargo build --release --manifest-path rust/Cargo.toml --lib
+
       - name: Build Windows app
         run: |
           flutter build windows --release
+          if ($LASTEXITCODE -ne 0) { exit 1 }
           # ship OpenSSL's DLLs next to the exe (the installer picks up *.dll)
           Get-ChildItem "$env:OPENSSL_DIR" -Recurse -Include libcrypto-3-x64.dll,libssl-3-x64.dll | Select-Object -First 2 | Copy-Item -Destination build\windows\x64\runner\Release\
           Get-ChildItem build\windows\x64\runner\Release\*.dll | Select-Object Name
