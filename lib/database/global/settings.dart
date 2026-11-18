@@ -36,6 +36,8 @@ class Settings {
   final RxInt refreshRate = 0.obs;
   final RxBool colorfulAvatars = false.obs;
   final RxBool colorfulBubbles = false.obs;
+  /// MessageSpayce: accent color for sent bubbles and highlights ("green", "blue", "purple", "yellow", or "theme" to use the theme's own color)
+  final RxString accentColor = "green".obs;
   final RxBool hideDividers = false.obs;
   final RxDouble scrollVelocity = 1.00.obs;
   final RxBool sendWithReturn = false.obs;
@@ -317,6 +319,7 @@ class Settings {
       'refreshRate': refreshRate.value,
       'colorfulAvatars': colorfulAvatars.value,
       'colorfulBubbles': colorfulBubbles.value,
+      'accentColor': accentColor.value,
       'hideDividers': hideDividers.value,
       'scrollVelocity': scrollVelocity.value,
       'sendWithReturn': sendWithReturn.value,
@@ -484,6 +487,7 @@ class Settings {
     ss.settings.refreshRate.value = map['refreshRate'] ?? 0;
     ss.settings.colorfulAvatars.value = map['colorfulAvatars'] ?? false;
     ss.settings.colorfulBubbles.value = map['colorfulBubbles'] ?? false;
+    ss.settings.accentColor.value = map['accentColor'] ?? "green";
     ss.settings.hideDividers.value = map['hideDividers'] ?? false;
     ss.settings.scrollVelocity.value = map['scrollVelocity']?.toDouble() ?? 1;
     ss.settings.sendWithReturn.value = map['sendWithReturn'] ?? false;
@@ -655,6 +659,7 @@ class Settings {
     s.refreshRate.value = map['refreshRate'] ?? 0;
     s.colorfulAvatars.value = map['colorfulAvatars'] ?? false;
     s.colorfulBubbles.value = map['colorfulBubbles'] ?? false;
+    s.accentColor.value = map['accentColor'] ?? "green";
     s.hideDividers.value = map['hideDividers'] ?? false;
     s.scrollVelocity.value = map['scrollVelocity']?.toDouble() ?? 1;
     s.sendWithReturn.value = map['sendWithReturn'] ?? false;
