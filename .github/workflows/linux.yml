@@ -1,0 +1,65 @@
+name: Linux build
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  linux:
+    name: Linux x64
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang cmake ninja-build pkg-config jq \
+            libgtk-3-dev liblzma-dev libstdc++-12-dev \
+            libmpv-dev mpv \
+            libwebkit2gtk-4.1-dev libsoup-3.0-dev \
+            libsecret-1-dev libjsoncpp-dev \
+            libnotify-dev libayatana-appindicator3-dev \
+            libasound2-dev libpulse-dev \
+            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
+            protobuf-compiler libssl-dev
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.24.0
+          cache: true
+
+      - name: Set up placeholder Fairplay keys
+        run: |
+          mkdir -p rustpush/certs/fairplay
+          for name in 4056631661436364584235346952193 4056631661436364584235346952194 \
+                      4056631661436364584235346952195 4056631661436364584235346952196 \
+                      4056631661436364584235346952197 4056631661436364584235346952198 \
+                      4056631661436364584235346952199 4056631661436364584235346952200 \
+                      4056631661436364584235346952201 4056631661436364584235346952208; do
+            cp rustpush/certs/legacy-fairplay/fairplay.pem rustpush/certs/fairplay/$name.pem
+            cp rustpush/certs/legacy-fairplay/fairplay.crt rustpush/certs/fairplay/$name.crt
+          done
+
+      - name: Build
+        run: |
+          flutter config --enable-linux-desktop
+          flutter pub get
+          flutter build linux --release
+
+      - name: Package
+        run: |
+          cd build/linux/x64/release/bundle
+          tar czf "$GITHUB_WORKSPACE/messagespayce-linux-x64.tar.gz" .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: messagespayce-linux-x64
+          path: messagespayce-linux-x64.tar.gz
