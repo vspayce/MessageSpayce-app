@@ -142,27 +142,22 @@ jobs:
             cp rustpush/certs/legacy-fairplay/fairplay.crt rustpush/certs/fairplay/$name.crt
           done
 
-      - name: Install OpenSSL (prebuilt)
-        run: |
-          # the Rust openssl bindings support OpenSSL 1.x/3.x, not 4.x: pick the newest 3.x
-          $v = choco search openssl --exact --all-versions --limit-output | ForEach-Object { ($_ -split '\|')[1] } | Where-Object { $_ -like '3.*' } | Sort-Object { [version]($_ -replace '[^0-9.].*$','') } -Descending | Select-Object -First 1
-          Write-Host "Installing OpenSSL $v"
-          choco install -y openssl --version=$v --allow-downgrade
-          $dir = @("C:\Program Files\OpenSSL", "C:\Program Files\OpenSSL-Win64") | Where-Object { Test-Path "$_\include\openssl" } | Select-Object -First 1
-          if (-not $dir) { throw "OpenSSL not found" }
-          Write-Host "Using OpenSSL at $dir"
-          "OPENSSL_DIR=$dir" | Out-File -FilePath $env:GITHUB_ENV -Append
-          "OPENSSL_NO_VENDOR=1" | Out-File -FilePath $env:GITHUB_ENV -Append
-
       - name: Build Rust core (shows real compiler errors)
-        run: cargo build --release --manifest-path rust/Cargo.toml --lib
+        env:
+          OPENSSL_SRC_PERL: C:\Strawberry\perl\bin\perl.exe
+        run: |
+          $env:PATH = "C:\Program Files\NASM;C:\Strawberry\perl\bin;$env:PATH"
+          perl -v | Select-Object -First 2
+          cargo build -vv --release --manifest-path rust/Cargo.toml --lib 2>&1 | Tee-Object cargo.log | Select-String -Pattern "error|Configure|panicked|perl" | Select-Object -Last 80
+          if ($LASTEXITCODE -ne 0) { exit 1 }
 
       - name: Build Windows app
+        env:
+          OPENSSL_SRC_PERL: C:\Strawberry\perl\bin\perl.exe
         run: |
+          $env:PATH = "C:\Program Files\NASM;C:\Strawberry\perl\bin;$env:PATH"
           flutter build windows --release
           if ($LASTEXITCODE -ne 0) { exit 1 }
-          # ship OpenSSL's DLLs next to the exe (the installer picks up *.dll)
-          Get-ChildItem "$env:OPENSSL_DIR" -Recurse -Include libcrypto-3-x64.dll,libssl-3-x64.dll | Select-Object -First 2 | Copy-Item -Destination build\windows\x64\runner\Release\
           Get-ChildItem build\windows\x64\runner\Release\*.dll | Select-Object Name
 
       - name: Build installer
