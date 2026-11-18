@@ -144,7 +144,10 @@ jobs:
 
       - name: Install OpenSSL (prebuilt)
         run: |
-          choco install -y openssl
+          # the Rust openssl bindings support OpenSSL 1.x/3.x, not 4.x: pick the newest 3.x
+          $v = choco search openssl --exact --all-versions --limit-output | ForEach-Object { ($_ -split '\|')[1] } | Where-Object { $_ -like '3.*' } | Sort-Object { [version]($_ -replace '[^0-9.].*$','') } -Descending | Select-Object -First 1
+          Write-Host "Installing OpenSSL $v"
+          choco install -y openssl --version=$v --allow-downgrade
           $dir = @("C:\Program Files\OpenSSL", "C:\Program Files\OpenSSL-Win64") | Where-Object { Test-Path "$_\include\openssl" } | Select-Object -First 1
           if (-not $dir) { throw "OpenSSL not found" }
           Write-Host "Using OpenSSL at $dir"
