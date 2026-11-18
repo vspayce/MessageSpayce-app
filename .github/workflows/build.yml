@@ -104,3 +104,58 @@ jobs:
 
       - name: cargo check (desktop)
         run: cargo check --manifest-path rust/Cargo.toml --lib
+
+  # Sculpin: real Windows build + installer, so the app (with the OS-keyring
+  # encrypted keystore) can be installed straight from a CI run.
+  windows:
+    name: Windows installer
+    runs-on: windows-latest
+    steps:
+      - name: Allow long paths
+        run: git config --system core.longpaths true
+
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.24.0
+
+      - name: Install protoc and NASM
+        run: choco install -y protoc nasm
+
+      - name: Set up fake Fairplay keys
+        shell: bash
+        run: |
+          mkdir -p rustpush/certs/fairplay
+          for name in 4056631661436364584235346952193 4056631661436364584235346952194 4056631661436364584235346952195 \
+                      4056631661436364584235346952196 4056631661436364584235346952197 4056631661436364584235346952198 \
+                      4056631661436364584235346952199 4056631661436364584235346952200 4056631661436364584235346952201 \
+                      4056631661436364584235346952208; do
+            cp rustpush/certs/legacy-fairplay/fairplay.pem rustpush/certs/fairplay/$name.pem
+            cp rustpush/certs/legacy-fairplay/fairplay.crt rustpush/certs/fairplay/$name.crt
+          done
+
+      - name: Build Windows app
+        env:
+          # vendored OpenSSL must be built with Strawberry Perl, not Git's MSYS perl
+          OPENSSL_SRC_PERL: C:\Strawberry\perl\bin\perl.exe
+        run: |
+          $env:PATH = "C:\Program Files\NASM;$env:PATH"
+          flutter build windows --release
+
+      - name: Build installer
+        run: |
+          if (-not (Get-Command iscc -ErrorAction SilentlyContinue)) { choco install -y innosetup }
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" windows\bluebubbles_installer_script.iss
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Sculpin Windows installer
+          path: windows/sculpin-windows.exe
