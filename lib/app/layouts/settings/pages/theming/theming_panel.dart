@@ -410,6 +410,21 @@ class _ThemingPanelState extends CustomState<ThemingPanel, void, ThemingPanelCon
                       ),
                     if (!kIsWeb && !kIsDesktop)
                       const SettingsDivider(padding: EdgeInsets.only(left: 16.0)),
+                    Obx(() => SettingsOptions<String>(
+                      initial: ss.settings.accentColor.value,
+                      onChanged: (val) {
+                        if (val == null) return;
+                        ss.settings.accentColor.value = val;
+                        saveSettings();
+                        ts.refreshAccent(context);
+                      },
+                      options: const ["green", "blue", "purple", "yellow", "theme"],
+                      textProcessing: (val) => val == "theme" ? "Theme" : val[0].toUpperCase() + val.substring(1),
+                      title: "Accent Color",
+                      subtitle: "Color of your sent messages and highlights. \"Theme\" uses your theme's own color.",
+                      secondaryColor: headerColor,
+                    )),
+                    const SettingsDivider(padding: EdgeInsets.only(left: 16.0)),
                     Obx(() => SettingsSwitch(
                       onChanged: (bool val) {
                         ss.settings.colorfulAvatars.value = val;

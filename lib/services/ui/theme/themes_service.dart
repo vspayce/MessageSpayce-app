@@ -223,8 +223,33 @@ class ThemesService extends GetxService {
   }
   
   Tuple2 getStructsFromData(ThemeData light, ThemeData dark) {
-    return Platform.isWindows ? _applyWindowsAccent(light, dark) : _applyMonet(light, dark);
+    final Tuple2<ThemeData, ThemeData> t = Platform.isWindows ? _applyWindowsAccent(light, dark) : _applyMonet(light, dark);
+    return _applyAccentColor(t.item1, t.item2);
   }
+
+  /// MessageSpayce accent colors (Apple's system colors). "theme" keeps the theme's own primary color.
+  static const Map<String, Color> accentColors = {
+    "green": Color(0xFF34C759),
+    "blue": Color(0xFF0B84FE),
+    "purple": Color(0xFFAF52DE),
+    "yellow": Color(0xFFFFCC00),
+  };
+
+  Tuple2<ThemeData, ThemeData> _applyAccentColor(ThemeData light, ThemeData dark) {
+    final Color? accent = accentColors[ss.settings.accentColor.value];
+    if (accent == null) return Tuple2(light, dark);
+    // Wallpaper (Material You) and media colors are explicit choices, so let them win.
+    if (ss.settings.monetTheming.value != Monet.none || ss.settings.colorsFromMedia.value) return Tuple2(light, dark);
+    // Dark text on light accents (yellow), white text on the rest
+    final Color onAccent = accent.computeLuminance() > 0.5 ? Colors.black : Colors.white;
+    ThemeData apply(ThemeData t) => t.copyWith(
+      colorScheme: t.colorScheme.copyWith(primary: accent, onPrimary: onAccent),
+    );
+    return Tuple2(apply(light), apply(dark));
+  }
+
+  /// Re-applies the current themes (e.g. after the accent color setting changes).
+  void refreshAccent(BuildContext context) => _loadTheme(context);
 
   Future<ThemeStruct> revertToPreviousDarkTheme() async {
     List<ThemeStruct> allThemes = ThemeStruct.getThemes();
