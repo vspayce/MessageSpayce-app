@@ -26,6 +26,11 @@ function(apply_cargokit target manifest_dir lib_name any_symbol_name)
         set(OUTPUT_LIB "${CMAKE_CURRENT_BINARY_DIR}/${CARGOKIT_LIB_FULL_NAME}")
     endif()
     set(CARGOKIT_TEMP_DIR "${CMAKE_CURRENT_BINARY_DIR}/cargokit_build")
+    # Sculpin: optional short build dir. Deep paths break OpenSSL's Perl
+    # configure on Windows (260-char limit).
+    if (DEFINED ENV{CARGOKIT_TEMP_DIR_OVERRIDE})
+        file(TO_CMAKE_PATH "$ENV{CARGOKIT_TEMP_DIR_OVERRIDE}" CARGOKIT_TEMP_DIR)
+    endif()
 
     if (FLUTTER_TARGET_PLATFORM)
         set(CARGOKIT_TARGET_PLATFORM "${FLUTTER_TARGET_PLATFORM}")

@@ -154,6 +154,7 @@ jobs:
       - name: Build Windows app
         env:
           OPENSSL_SRC_PERL: C:\Strawberry\perl\bin\perl.exe
+          CARGOKIT_TEMP_DIR_OVERRIDE: C:\ck
         run: |
           $env:PATH = "C:\Program Files\NASM;C:\Strawberry\perl\bin;$env:PATH"
           flutter build windows --release
